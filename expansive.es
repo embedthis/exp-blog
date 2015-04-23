@@ -28,6 +28,13 @@ Expansive.load({
                     if (post.modified > getLastRendered(post)) {
                         expansive.modify(post, 'blog', 'file')
                     }
+                    /*
+                        Still not catching modifications to the partials used by the index.html and archive.html
+                     */
+                    let index = service.home.join('index.html')
+                    if (getLastRendered(post) > getLastRendered(index)) {
+                        expansive.modify(index, 'blog', 'file')
+                    }
                 }
             }
 
@@ -48,10 +55,6 @@ Expansive.load({
 
                 let home = directories.contents.join(service.home)
 
-/*  MOB - should not need to do this blend
-                let blogMeta = blend(topMeta.clone(), expansive.metaCache[home] || {})
-                blend(blogMeta, { blog: { author: {} }}, {overwrite: false})
-*/
                 let blogMeta = expansive.metaCache[home] || topMeta
                 blogMeta.blog ||= {}
                 blogMeta.blog.author ||= {}
