@@ -1,0 +1,17 @@
+{
+    "name": "exp-blog",
+    "description": "Blogging Plugin for Expansive",
+    "version": "0.2.0",
+    "keywords": [
+        "expansive-plugin",
+        "blog"
+    ],
+    "licenses": "GPL",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/embedthis/exp-blog.git"
+    },
+    "pak": {
+        "version": ">=0.10"
+    }
+}
