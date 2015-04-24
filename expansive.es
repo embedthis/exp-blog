@@ -187,12 +187,16 @@ Expansive.load({
             public function renderBlogRecent(count) {
                 let service = expansive.services.blog
                 count ||= service.recent
+                write('<ul class="recent">\n')
                 for each (post in service.sequence) {
-                    write('<p><a href="' + post.meta.url + '">' + post.meta.title + '</a></p>\n')
+                    write('<li><a href="' + post.meta.url + '">' + post.meta.title + '</a></li>\n')
                     if (--count <= 0) {
                         break
                     }
                 }
+                write('<li><a href="' + meta.top + expansive.topMeta.blog.home + '/archive.html">All Posts</a></li>\n')
+                write('</ul\n')
+
             }
 
         `
