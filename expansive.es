@@ -14,7 +14,11 @@ Expansive.load({
                 service[d] = Path(service[d])
             }
             expansive.topMeta.blog ||= {}
-            expansive.topMeta.blog.home ||= service.home
+            let bm = expansive.topMeta.blog
+            bm.home ||= service.home
+            bm.top = Uri('/' + (service.home != '.' ? service.home : ''))
+            bm.posts = bm.top.join(service.posts)
+            bm.categories = bm.top.join(service.categories)
             
             function blogWatcher() {
                 let directories = expansive.directories
@@ -25,14 +29,18 @@ Expansive.load({
                     if (!filter(post)) {
                         continue
                     }
-                    if (post.modified > getLastRendered(post)) {
-                        expansive.modify(post, 'blog', 'file')
+                    let postRendered = getLastRendered(post)
+                    if (post.modified > postRendered) {
+                        let meta = getFileMeta(post)
+                        if (!meta.draft) {
+                            expansive.modify(post, 'blog', 'file')
+                        }
                     }
                     /*
                         Still not catching modifications to the partials used by the index.html and archive.html
                      */
                     let index = service.home.join('index.html')
-                    if (getLastRendered(post) > getLastRendered(index)) {
+                    if (postRendered > getLastRendered(index)) {
                         expansive.modify(index, 'blog', 'file')
                     }
                 }
@@ -67,6 +75,9 @@ Expansive.load({
                     expansive.initMeta(path, meta)
                     meta = blend(blogMeta.clone(), meta)
                     meta = blend({categories: [], date: Date()}, meta)
+                    if (meta.draft) {
+                        continue
+                    }
                     let date = meta.date
                     let post = {
                         meta: meta,
@@ -156,6 +167,7 @@ Expansive.load({
                     let matches = text.match(/(.*)<!--more-->/sm)
                     if (matches) {
                         text = matches[1] + '\n'
+                        meta.more = true
                     }
                     meta.layout = 'blog-summary'
                     contents += renderContents(text, meta)
