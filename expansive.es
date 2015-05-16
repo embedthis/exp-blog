@@ -125,7 +125,7 @@ Expansive.load({
                             contents += '<td class="date one wide column">' + ((month != pastMonth) ? month : '') + ' ' +
                                          ((day != pastDay) ? day : '') + '</td>\n'
                             contents += '<td class="thirteen wide column"><div class="title">' + 
-                                        '<a href="' + meta.url + '">' + meta.title + '</a></div>\n'
+                                        '<a href="@~' + meta.url + '">' + meta.title + '</a></div>\n'
                             contents += '<div class="posted">posted in '
                             for each (category in meta.categories) {
                                 contents += '<a href="@~' + service.home + '/' + service.categories + '/' + 
