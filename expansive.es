@@ -112,7 +112,7 @@ Expansive.load({
                     }
                     let title = category ? ('Category: ' + category) : 'Blog Archive'
                     let contents = '<div class="categories">\n<h1>' + title + '</h1>\n'
-                    contents += '<table class="ui striped table" alt="posts">\n<tbody>\n'
+                    contents += '<table class="ui striped table" title="posts">\n<tbody>\n'
                     let pastYear, pastDay, pastMonth
                     for each (post in sequence) {
                         let meta = post.meta
@@ -201,16 +201,14 @@ Expansive.load({
                 count ||= service.recent
                 write('<ul class="recent">\n')
                 for each (post in service.sequence) {
-                    write('<li><a href="' + post.meta.url + '">' + post.meta.title + '</a></li>\n')
+                    write('<li><a href="@~' + post.meta.url + '">' + post.meta.title + '</a></li>\n')
                     if (--count <= 0) {
                         break
                     }
                 }
                 write('<li><a href="' + meta.top + expansive.topMeta.blog.home + '/archive.html">All Posts</a></li>\n')
-                write('</ul\n')
-
+                write('</ul>\n')
             }
-
         `
     }
 })
