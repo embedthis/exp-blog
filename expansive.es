@@ -32,6 +32,9 @@ Expansive.load({
                     let postRendered = getLastRendered(post)
                     if (post.modified > postRendered) {
                         let meta = getFileMeta(post)
+                        if (meta.default) {
+                            continue
+                        }
                         if (!meta.draft) {
                             expansive.modify(post, 'blog', 'file')
                         }
@@ -44,6 +47,17 @@ Expansive.load({
                         expansive.modify(index, 'blog', 'file')
                     }
                 }
+/* UNUSED
+                for each (comment in directories.comments.files('**', {directories: false})) {
+                    let path = comment.trimComponents(directories.comments.components.length)
+                    let dest = getDest(path)
+                    if (comment.modified > dest.modified) {
+                        expansive.modify(comment, 'blog')
+                        let source = directories.contents.files(path + '*')
+                        expansive.modify(source, 'file')
+                    }
+                }
+*/
             }
 
             expansive.addWatcher('blog', blogWatcher)
@@ -72,6 +86,9 @@ Expansive.load({
                  */
                 for each (path in service.articles) {
                     let meta = getFileMeta(path)
+                    if (meta.default) {
+                        continue
+                    }
                     expansive.initMeta(path, meta)
                     meta = blend(blogMeta.clone(), meta)
                     meta = blend({categories: [], date: Date()}, meta)
@@ -125,10 +142,10 @@ Expansive.load({
                             contents += '<td class="date one wide column">' + ((month != pastMonth) ? month : '') + ' ' +
                                          ((day != pastDay) ? day : '') + '</td>\n'
                             contents += '<td class="thirteen wide column"><div class="title">' + 
-                                        '<a href="@~' + meta.url + '">' + meta.title + '</a></div>\n'
+                                        '<a href="@~/' + meta.url + '">' + meta.title + '</a></div>\n'
                             contents += '<div class="posted">posted in '
                             for each (category in meta.categories) {
-                                contents += '<a href="@~' + service.home + '/' + service.categories + '/' + 
+                                contents += '<a href="@~/' + service.home + '/' + service.categories + '/' + 
                                     category + '/">' + category + '</a>, '
                             }
                             contents = contents.slice(0, -2)
@@ -201,12 +218,12 @@ Expansive.load({
                 count ||= service.recent
                 write('<ul class="recent">\n')
                 for each (post in service.sequence) {
-                    write('<li><a href="@~' + post.meta.url + '">' + post.meta.title + '</a></li>\n')
+                    write('<li><a href="@~/' + post.meta.url + '">' + post.meta.title + '</a></li>\n')
                     if (--count <= 0) {
                         break
                     }
                 }
-                write('<li><a href="' + meta.top + expansive.topMeta.blog.home + '/archive.html">All Posts</a></li>\n')
+                write('<li><a href="' + meta.top + '/' + expansive.topMeta.blog.home + '/archive.html">All Posts</a></li>\n')
                 write('</ul>\n')
             }
         `
