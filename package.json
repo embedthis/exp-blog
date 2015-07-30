@@ -10,8 +10,5 @@
     "repository": {
         "type": "git",
         "url": "git://github.com/embedthis/exp-blog.git"
-    },
-    "pak": {
-        "version": ">=0.10"
     }
 }
