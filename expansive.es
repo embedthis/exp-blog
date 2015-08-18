@@ -124,6 +124,9 @@ Expansive.load({
                     Make a category page. Used for the overall 'Blog Archive' and per-category pages
                  */
                 function makeCategories(path: Path, category) {
+                    if (!expansive.modified.everything) {
+                        return
+                    }
                     if (category) {
                         dist.join(service.home, service.categories, category).makeDir()
                     }
@@ -187,6 +190,7 @@ Expansive.load({
                         meta.more = true
                     }
                     meta.layout = 'blog-summary'
+                    meta.summary = true
                     contents += renderContents(text, meta)
 
                     if (service.rss) {
@@ -225,6 +229,53 @@ Expansive.load({
                 }
                 write('<li><a href="' + meta.top + '/' + expansive.topMeta.blog.home + '/archive.html">All Posts</a></li>\n')
                 write('</ul>\n')
+            }
+
+            public function renderBlogImage(url, options = {}) {
+                let width = ''
+                if (meta.summary) {
+                    if (options.summary) {
+                        blend(options, options.summary)
+                    }
+                } else {
+                    if (options.post) {
+                        blend(options, options.post)
+                    }
+                }
+                if (options.lead && !meta.leadImage) {
+                    options.css ||= 'lead'
+                    meta.leadImage = true
+                }
+                if (options.width) {
+                    if (options.style) {
+                        options.style += '; width:' + options.width
+                    } else {
+                        options.style = 'width:' + options.width
+                    }
+                }
+                let style = ''
+                if (options.style) {
+                    style = 'style="' + options.style + ';"'
+                }
+                let css = ''
+                if (options.css) {
+                    css = 'class ="' + options.css + '"'
+                }
+                let alt = options.alt || Uri(url).basename.trimExt()
+
+                if (meta.summary) {
+                    if (options.ifpost) {
+                        return
+                    }
+                    write('<a href="' + meta.url + '">\n')
+                    write('<img ' + css + ' ' + style + ' src="' + url + '" alt="' + alt + '">\n')
+                    write('</a>\n')
+                } else {
+                    if (options.ifsummary) {
+                        return
+                    }
+                    write('<img ' + css + ' ' + style + ' src="' + url + '" alt="' + alt + '">\n')
+                }
             }
         `
     }
