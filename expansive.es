@@ -257,9 +257,15 @@ Expansive.load({
                 if (options.style) {
                     style = 'style="' + options.style + ';"'
                 }
+                let clear = ''
+                if (options.clearfix) {
+                    clear = ' clearfix'
+                }
                 let css = ''
                 if (options.css) {
-                    css = 'class ="' + options.css + '"'
+                    css = 'class ="' + options.css + clear + '"'
+                } else if (clear) {
+                    css = 'class ="clearfix"'
                 }
                 let alt = options.alt || Uri(url).basename.trimExt()
 
