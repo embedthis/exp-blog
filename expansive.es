@@ -2,10 +2,29 @@ Expansive.load({
     transforms: {
         name:  'blog',
 
+        /*
+            Home directory and url for the blog
+         */
         home:  '.',
+
+        /*
+            Directory containing posts under home
+         */
         posts: 'posts',
+
+        /*
+            Directory for post categories
+         */
         categories: 'categories',
+
+        /*
+            Number of recent posts on the summary home page
+         */
         recent: 5,
+
+        /*
+            Generate RSS feed
+         */
         rss:   true,
 
         script: `
@@ -191,7 +210,22 @@ Expansive.load({
                     }
                     meta.layout = 'blog-summary'
                     meta.summary = true
-                    contents += renderContents(text, meta)
+                    let text = renderContents(text, meta)
+
+                    /* Rebase links from blog-page relative to home page relative */
+                    let re = /(src|href|link)=['"][^'"]*['"]/g
+                    let result = ''
+                    let start = 0, end = 0
+                    while (match = re.exec(text, start)) {
+                        end = re.lastIndex - match[0].length
+                        result += text.slice(start, end)
+                        let [all,kind,ref] = match[0].match(/(src|href|link)=['"]([^\"']*)['"]/)
+                        let url: Uri = Uri(meta.dir.join(ref)).normalize.trimStart(Uri(service.home).normalize + '/')
+                        result += kind + '="' + url + '"'
+                        start = re.lastIndex
+                    }
+                    result += text.slice(start)
+                    contents += result
 
                     if (service.rss) {
                         meta.layout = 'blog-atom-entry'
@@ -273,7 +307,7 @@ Expansive.load({
                     if (options.ifpost) {
                         return
                     }
-                    write('<a href="' + meta.url + '">\n')
+                    write('<a href="' + meta.url.basename + '">\n')
                     write('<img ' + css + ' ' + style + ' src="' + url + '" alt="' + alt + '">\n')
                     write('</a>\n')
                 } else {
