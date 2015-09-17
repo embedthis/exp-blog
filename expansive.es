@@ -3,9 +3,14 @@ Expansive.load({
         name:  'blog',
 
         /*
-            Home directory and url for the blog
+            Home directory for the blog
          */
         home:  '.',
+
+        /*
+            Top URL for the blog. May be prefixed by application prefix ('/blog')
+         */
+        top:  '@~',
 
         /*
             Directory containing posts under home
@@ -29,13 +34,13 @@ Expansive.load({
 
         script: `
             let service = expansive.services.blog
-            for each (d in [ 'home', 'posts', 'categories' ]) {
+            for each (d in [ 'home', 'top', 'posts', 'categories' ]) {
                 service[d] = Path(service[d])
             }
             expansive.topMeta.blog ||= {}
             let bm = expansive.topMeta.blog
             bm.home ||= service.home
-            bm.top = Uri('/' + (service.home != '.' ? service.home : ''))
+            bm.top ||= Uri(service.top)
             bm.posts = bm.top.join(service.posts)
             bm.categories = bm.top.join(service.categories)
             
@@ -66,17 +71,6 @@ Expansive.load({
                         expansive.modify(index, 'blog', 'file')
                     }
                 }
-/* UNUSED
-                for each (comment in directories.comments.files('**', {directories: false})) {
-                    let path = comment.trimComponents(directories.comments.components.length)
-                    let dest = getDest(path)
-                    if (comment.modified > dest.modified) {
-                        expansive.modify(comment, 'blog')
-                        let source = directories.contents.files(path + '*')
-                        expansive.modify(source, 'file')
-                    }
-                }
-*/
             }
 
             expansive.addWatcher('blog', blogWatcher)
@@ -96,9 +90,9 @@ Expansive.load({
 
                 let home = directories.contents.join(service.home)
 
-                let blogMeta = expansive.metaCache[home] || topMeta
-                blogMeta.blog ||= {}
-                blogMeta.blog.author ||= {}
+                let bm = expansive.metaCache[home] || topMeta
+                bm.blog ||= {}
+                bm.blog.author ||= {}
 
                 /*
                     Build list of posts that we can sort
@@ -109,7 +103,7 @@ Expansive.load({
                         continue
                     }
                     expansive.initMeta(path, meta)
-                    meta = blend(blogMeta.clone(), meta)
+                    meta = blend(bm.clone(), meta)
                     meta = blend({categories: [], date: Date()}, meta)
                     if (meta.draft) {
                         continue
@@ -167,8 +161,9 @@ Expansive.load({
                                         '<a href="@~/' + meta.url + '">' + meta.title + '</a></div>\n'
                             contents += '<div class="posted">posted in '
                             for each (category in meta.categories) {
-                                contents += '<a href="@~/' + service.home + '/' + service.categories + '/' + 
-                                    category + '/">' + category + '</a>, '
+                                let cat = category.replace(/\\s/g, '%20')
+                                contents += '<a href="' + service.top + '/' + service.categories + '/' + cat 
+                                    + '/">' + category + '</a>, '
                             }
                             contents = contents.slice(0, -2)
                             contents += '</div></td>\n'
@@ -176,7 +171,7 @@ Expansive.load({
                         }
                     }
                     contents += '</tbody>\n</table>\n</div>\n'
-                    let meta = blend(blogMeta.clone(), { layout: 'blog-categories', document: path })
+                    let meta = blend(bm.clone(), { layout: 'blog-categories', document: path })
                     contents = renderContents(contents, meta)
                     writeDest(contents, meta)
                 }
@@ -236,13 +231,13 @@ Expansive.load({
                     }
                 }
                 let path = service.home.join('index.html.exp')
-                let meta = blend(blogMeta.clone(), { layout: 'blog-home', document: path })
+                let meta = blend(bm.clone(), { layout: 'blog-home', document: path })
                 contents = renderContents(contents, meta)
                 writeDest(contents, meta)
 
                 if (service.rss) {
                     let path = service.home.join('atom.xml')
-                    let meta = blend(blogMeta.clone(), { layout: 'blog-atom', document: path })
+                    let meta = blend(bm.clone(), { layout: 'blog-atom', document: path })
                     rss = renderContents(rss, meta)
                     writeDest(rss, meta)
                 }
@@ -261,7 +256,7 @@ Expansive.load({
                         break
                     }
                 }
-                write('<li><a href="' + meta.top + '/' + expansive.topMeta.blog.home + '/archive.html">All Posts</a></li>\n')
+                write('<li><a href="' + meta.blog.top + '/archive.html">All Posts</a></li>\n')
                 write('</ul>\n')
             }
 
