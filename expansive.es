@@ -206,25 +206,25 @@ Expansive.load({
                     meta.layout = 'blog-summary'
                     meta.summary = true
                     let text = renderContents(text, meta)
-
-                    /* Rebase links from blog-page relative to home page relative */
-                    let re = /(src|href|link)=['"][^'"]*['"]/g
-                    let result = ''
-                    let start = 0, end = 0
-                    while (match = re.exec(text, start)) {
-                        end = re.lastIndex - match[0].length
-                        result += text.slice(start, end)
-                        let [all,kind,ref] = match[0].match(/(src|href|link)=['"]([^\"']*)['"]/)
-                        let url: Uri = Uri(meta.dir.join(ref)).normalize.trimStart(Uri(service.home).normalize + '/')
-                        result += kind + '="' + url + '"'
-                        start = re.lastIndex
-                    }
-                    result += text.slice(start)
-                    contents += result
-
-                    if (service.rss) {
-                        meta.layout = 'blog-atom-entry'
-                        rss += renderContents(article, meta)
+                    if (text) {
+                        /* Rebase links from blog-page relative to home page relative */
+                        let re = /(src|href|link)=['"][^'"]*['"]/g
+                        let result = ''
+                        let start = 0, end = 0
+                        while (match = re.exec(text, start)) {
+                            end = re.lastIndex - match[0].length
+                            result += text.slice(start, end)
+                            let [all,kind,ref] = match[0].match(/(src|href|link)=['"]([^\"']*)['"]/)
+                            let url: Uri = Uri(meta.dir.join(ref)).normalize.trimStart(Uri(service.home).normalize + '/')
+                            result += kind + '="' + url + '"'
+                            start = re.lastIndex
+                        }
+                        result += text.slice(start)
+                        contents += result
+                        if (service.rss) {
+                            meta.layout = 'blog-atom-entry'
+                            rss += renderContents(article, meta)
+                        }
                     }
                     if (--count <= 0) {
                         break
