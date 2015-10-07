@@ -5,85 +5,58 @@ Expansive plugin for blogs.
 
 ## Overview
 
-The exp-js plugin provides build tooling for script files. It provides the **render-js** service to
-manage the generation HTML for script files and provides the **minify-js** service to minify script files for release distributions.
+The exp-blog plugin provides a framework for blogging.
 
 ## Installation
 
-    pak install exp-js
+    pak install exp-blog
 
-### Services
-
-Provides the following services:
-* minify-js
-* render-js
-
-## render-js
-
-The render-js service smartly selects supplied Javascript files. By default, it selects minified scripts if a corresponding source map file with a 'min.map' extension is present. Otherwise, non-minified Javascript files with a plain 'js' extension will be selected.
-
-The render-js service also provides the `renderScript` API which generates &lt;script&gt; elements for selected script files. The order of generated script elements will match the required order as specified by Pak dependencies.
-
-The renderScripts API may be invoked with an optional array of Path patterns to select a subset of scripts for which
-to create script elements. This can be used to select or reject specific script files. A second argument may provide
-extra script files to render.
-```
-    renderScripts(['!unwanted.js'], ['extra.js'])
-```
+The blog service manages blog posts written using Markdown and generates a blog home page, blog categories, archive and
+RSS feeds.
 
 ### Configuration
 
-* enable &mdash; Enable the service. Default to true.
-* files &mdash; Array of files to process. Default so [ '**.js', '**.min.map', '**.min.js.map'] in
-    the control.documents directories.
-* mappings &mdash; Set of extensions to transform. Defaults to:
-```
-mappings: {
-    'js',
-    'min.js',
-    'min.map',
-    'min.js.map'
-}
-```
-* usemap &mdash; Use minified Javascript if corresponding source maps is present. Default to true.
-* usemin &mdash; Use minified Javascript if present. Default to null. Set explicitly to false
-    to disable the use of minified resources.
+* categories &mdash; Directory under 'dist' to contain the blog post category indexes.
+* csp &mdash; Generate content suitable for use with Content Security Protocol. This means no inline scripts or styles.
+    Defaults to true.
+* enable &mdash; Enable the blogging service. Default to true.
+* home &mdash; Home directory for the blog. Defaults to '.'
+* posts &mdash; Directory under 'contents' containing blog posts. Defaults to 'posts'.
+* recent &mdash; Number of recent posts to put on the home page. Defaults to 5.
+* rss &mdash; Generate an Atom / RSS feed. Defaults to true.
+* top &mdash; Top URL for the blog. Defaults to '@~'
 
-## minify-js
+## Creating Posts
 
-The minify-js service optimizes script files by minifying to remove white-space, managle names and otherwise compress the scripts. By default, the script files use a '.js' extension, but will use a '.min.js' extension if the 'dotmin' option is enabled.
+## Blog Meta Data
 
-### Configuration
+The blog service supports additional meta data fields.
 
-* compress &mdash; Enable compression of script files. Default to true.
-* dotmin &mdash; Use '.min.js' as the output file extension after minification. Otherwise will be '.js'.  Default to true.
-* enable &mdash; Enable minifying script files. Default to true.
-* files &mdash; Array of files to minify. Files are relative to 'source'.
-* genmap &mdash; Generate source map for minified scripts if 'minified' is true. Default to true.
-* mangle &mdash; Enable mangling of Javascript variable and function names. Default to true.
-* minify &mdash; Enable minifying of Javascript files. Default to false.
+* draft &mdash; If true, the post is in draft form and will not be rendered. Defaults to false.
+* date &mdash; Date the post was written. Use the form: 'YYYY-MM-DD MM:SS' using a 24-hour clock. Defaults to now.
+* categories &mdash; Array of blog categories. Categories are arbitrary strings.
+* title &mdash; Title of the post. This is used in the HTML page title.
 
-## Example
+## API
 
-The `debug` collection will be selected if the package.json `pak.mode` is set to debug. Similarly for the `release` collection.
+### renderBlogImage
 
-```
-debug: {
-    services: {
-        "minify-js": {
-            usemap: true
-        }
-    }
-}
-release: {
-    services: {
-        "minify-js": {
-            minify: true
-        }
-    }
-}
-```
+    renderBlogImage(url, options)
+
+#### Options
+
+* alt &mdash; Alternate text to use with the image. Default to the image basename.
+* clearfix &mdash; Clear the packing of the current HTML element. Defaults to false.
+* css &mdash; CSS selector to use in styling the image. Defaults to none.
+* lead &mdash; If true, the image is regarded as a post lead image. The image is formatted at 50% width and the text is right aligned around the image. Defaults to false.
+* ifpost &mdash; If true, the image appears on the post page itself. Defaults to true.
+* ifsummary &mdash; If true, the image appears on the blog summary page. Defaults to true.
+* post &mdash; Hash of options to apply only on the post page. Defaults to none.
+* style &mdash; Inline styles to use in styling the image. Defaults to none.
+* summary &mdash; Hash of options to apploy only on the blog summary page.
+* width &mdash; Width of the image. This is converted into a CSS style of the form: 'width-NN' where NN is the width
+    rounded down to the nearest power of 10. Default is none.
 
 ## Get Pak
 
-[https://embedthis.com/pak/](https://embedthis.com/pak/download.html)
+[https://embedthis.com/pak/](https://embedthis.com/pak/)

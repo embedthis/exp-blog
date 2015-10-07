@@ -1,7 +1,7 @@
 {
     "name": "exp-blog",
     "description": "Blogging Plugin for Expansive",
-    "version": "0.2.3",
+    "version": "0.3.0",
     "keywords": [
         "expansive-plugin",
         "blog"
@@ -10,5 +10,8 @@
     "repository": {
         "type": "git",
         "url": "git://github.com/embedthis/exp-blog.git"
+    },
+    "devDependencies": {
+        "expansive": ">=0.6.0"
     }
 }

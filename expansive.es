@@ -32,6 +32,11 @@ Expansive.load({
          */
         rss:   true,
 
+        /*
+            Using CSP (no inline styles)
+         */
+        csp: true,
+
         script: `
             let service = expansive.services.blog
             for each (d in [ 'home', 'top', 'posts', 'categories' ]) {
@@ -87,9 +92,7 @@ Expansive.load({
                 let sequence = []
 
                 service.sequence = sequence
-
                 let home = directories.contents.join(service.home)
-
                 let bm = expansive.metaCache[home] || topMeta
                 bm.blog ||= {}
                 bm.blog.author ||= {}
@@ -108,7 +111,7 @@ Expansive.load({
                     if (meta.draft) {
                         continue
                     }
-                    let date = meta.date
+                    let date = meta.date || Date()
                     let post = {
                         meta: meta,
                         document: path,
@@ -132,6 +135,10 @@ Expansive.load({
                     }
                 }
                 sequence.sort(sortPosts, -1)
+
+                if (expansive.filters) {
+                    return
+                }
 
                 /*
                     Make a category page. Used for the overall 'Blog Archive' and per-category pages
@@ -171,7 +178,7 @@ Expansive.load({
                         }
                     }
                     contents += '</tbody>\n</table>\n</div>\n'
-                    let meta = blend(bm.clone(), { layout: 'blog-categories', document: path })
+                    let meta = blend(bm.clone(), { layout: 'blog-categories', document: path, once: true })
                     contents = renderContents(contents, meta)
                     writeDest(contents, meta)
                 }
@@ -207,7 +214,7 @@ Expansive.load({
                     meta.summary = true
                     let text = renderContents(text, meta)
                     if (text) {
-                        /* Rebase links from blog-page relative to home page relative */
+                        /* Rebase links from blog-page relative to home-page relative */
                         let re = /(src|href|link)=['"][^'"]*['"]/g
                         let result = ''
                         let start = 0, end = 0
@@ -215,7 +222,19 @@ Expansive.load({
                             end = re.lastIndex - match[0].length
                             result += text.slice(start, end)
                             let [all,kind,ref] = match[0].match(/(src|href|link)=['"]([^\"']*)['"]/)
-                            let url: Uri = Uri(meta.dir.join(ref)).normalize.trimStart(Uri(service.home).normalize + '/')
+                            let url
+                            try {
+                                if (!Uri(ref).scheme) {
+                                    if (ref == '') {
+                                        ref = './'
+                                    }
+                                    url = Uri(meta.dir).join(ref).normalize.trimStart(Uri(service.home).normalize + '/')
+                                } else {
+                                    url = ref
+                                }
+                            } catch(e) {
+                                url = ref
+                            }
                             result += kind + '="' + url + '"'
                             start = re.lastIndex
                         }
@@ -261,6 +280,7 @@ Expansive.load({
             }
 
             public function renderBlogImage(url, options = {}) {
+                let service = expansive.services.blog
                 let width = ''
                 if (meta.summary) {
                     if (options.summary) {
@@ -271,30 +291,38 @@ Expansive.load({
                         blend(options, options.post)
                     }
                 }
-                if (options.lead && !meta.leadImage) {
-                    options.css ||= 'lead'
-                    meta.leadImage = true
+                let style = '', clear = '', css = ''
+                if (options.lead) {
+                    css += 'width-50 '
                 }
                 if (options.width) {
-                    if (options.style) {
-                        options.style += '; width:' + options.width
+                    if (service.csp) {
+                        let width = parseInt(options.width / 10) * 10;
+                        css += 'width-' + width + ' '
                     } else {
-                        options.style = 'width:' + options.width
+                        style += 'width:' + options.width + ';'
                     }
                 }
-                let style = ''
                 if (options.style) {
-                    style = 'style="' + options.style + ';"'
+                    if (service.csp) {
+                        trace('Warn', 'Inline styles used with CSP')
+                    } else {
+                        style += options.style + ';'
+                    }
                 }
-                let clear = ''
                 if (options.clearfix) {
-                    clear = ' clearfix'
+                    clear = 'clearfix'
                 }
-                let css = ''
                 if (options.css) {
-                    css = 'class ="' + options.css + clear + '"'
+                    css += options.css + ' ' + clear + ' '
                 } else if (clear) {
-                    css = 'class ="clearfix"'
+                    css += 'clearfix '
+                }
+                if (css) {
+                    css = 'class="' + css.trim() + '" '
+                }
+                if (style) {
+                    style = 'style="' + style.trim().trim(';') + ';" '
                 }
                 let alt = options.alt || Uri(url).basename.trimExt()
 
@@ -303,13 +331,13 @@ Expansive.load({
                         return
                     }
                     write('<a href="' + meta.url.basename + '">\n')
-                    write('<img ' + css + ' ' + style + ' src="' + url + '" alt="' + alt + '">\n')
+                    write('<img ' + css + style + 'src="' + url + '" alt="' + alt + '">\n')
                     write('</a>\n')
                 } else {
                     if (options.ifsummary) {
                         return
                     }
-                    write('<img ' + css + ' ' + style + ' src="' + url + '" alt="' + alt + '">\n')
+                    write('<img ' + css + style + 'src="' + url + '" alt="' + alt + '">\n')
                 }
             }
         `
