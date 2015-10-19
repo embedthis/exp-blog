@@ -1,5 +1,6 @@
 Expansive.load({
-    transforms: {
+
+    services: {
         name:  'blog',
 
         /*
@@ -37,63 +38,145 @@ Expansive.load({
          */
         csp: true,
 
-        script: `
-            let service = expansive.services.blog
-            for each (d in [ 'home', 'top', 'posts', 'categories' ]) {
-                service[d] = Path(service[d])
-            }
-            expansive.topMeta.blog ||= {}
-            let bm = expansive.topMeta.blog
-            bm.home ||= service.home
-            bm.top ||= Uri(service.top)
-            bm.posts = bm.top.join(service.posts)
-            bm.categories = bm.top.join(service.categories)
-            
-            function blogWatcher() {
-                let directories = expansive.directories
-                let service = expansive.services.blog
-                let pattern = directories.contents.join(service.home, service.posts)
-                service.articles = directories.top.files(pattern, { contents: true, directories: false, relative: true})
-                for each (post in service.articles) {
-                    if (!filter(post)) {
-                        continue
-                    }
-                    let postRendered = getLastRendered(post)
-                    if (post.modified > postRendered) {
-                        let meta = getFileMeta(post)
-                        if (meta.default) {
+        transforms: {
+            init: function(transform) {
+                let service = transform.service
+                for each (d in [ 'home', 'top', 'posts', 'categories' ]) {
+                    service[d] = Path(service[d])
+                }
+                /*
+                    Inject meta data for pages
+                 */
+                expansive.topMeta.blog ||= {}
+                let bm = expansive.topMeta.blog
+                bm.home ||= service.home
+                bm.top ||= Uri(service.top)
+                bm.posts = bm.top.join(service.posts)
+                bm.categories = bm.top.join(service.categories)
+                
+                /*
+                    Watch for changes
+                 */
+                expansive.addWatcher('blog', function() {
+                    let directories = expansive.directories
+                    let service = expansive.services.blog
+                    let pattern = directories.contents.join(service.home, service.posts)
+                    service.articles = directories.top.files(pattern, { contents: true, directories: false, relative: true})
+                    for each (post in service.articles) {
+                        if (!filter(post)) {
                             continue
                         }
-                        if (!meta.draft) {
-                            expansive.modify(post, 'blog', 'file')
+                        let postRendered = getLastRendered(post)
+                        if (post.modified > postRendered) {
+                            let meta = getFileMeta(post)
+                            if (meta.default) {
+                                continue
+                            }
+                            if (!meta.draft) {
+                                expansive.modify(post, 'blog', 'file')
+                            }
+                        }
+                        /*
+                            Still not catching modifications to the partials used by the index.html and archive.html
+                         */
+                        let index = service.home.join('index.html')
+                        if (postRendered > getLastRendered(index)) {
+                            expansive.modify(index, 'blog', 'file')
                         }
                     }
-                    /*
-                        Still not catching modifications to the partials used by the index.html and archive.html
-                     */
-                    let index = service.home.join('index.html')
-                    if (postRendered > getLastRendered(index)) {
-                        expansive.modify(index, 'blog', 'file')
+                })
+
+                global.renderBlogRecent = function(count) {
+                    let service = expansive.services.blog
+                    count ||= service.recent
+                    write('<ul class="recent">\n')
+                    for each (post in service.sequence) {
+                        write('<li><a href="@~/' + post.meta.url + '">' + post.meta.title + '</a></li>\n')
+                        if (--count <= 0) {
+                            break
+                        }
+                    }
+                    write('<li><a href="' + meta.blog.top + '/archive.html">All Posts</a></li>\n')
+                    write('</ul>\n')
+                }
+
+                global.renderBlogImage = function(url, options = {}) {
+                    let service = expansive.services.blog
+                    let width = ''
+                    if (meta.summary) {
+                        if (options.summary) {
+                            blend(options, options.summary)
+                        }
+                    } else {
+                        if (options.post) {
+                            blend(options, options.post)
+                        }
+                    }
+                    let style = '', clear = '', css = ''
+                    if (options.lead) {
+                        css += 'width-50 '
+                    }
+                    if (options.width) {
+                        if (service.csp) {
+                            let width = parseInt(options.width / 10) * 10;
+                            css += 'width-' + width + ' '
+                        } else {
+                            style += 'width:' + options.width + ';'
+                        }
+                    }
+                    if (options.style) {
+                        if (service.csp) {
+                            trace('Warn', 'Inline styles used with CSP')
+                        } else {
+                            style += options.style + ';'
+                        }
+                    }
+                    if (options.clearfix) {
+                        clear = 'clearfix'
+                    }
+                    if (options.css) {
+                        css += options.css + ' ' + clear + ' '
+                    } else if (clear) {
+                        css += 'clearfix '
+                    }
+                    if (css) {
+                        css = 'class="' + css.trim() + '" '
+                    }
+                    if (style) {
+                        style = 'style="' + style.trim().trim(';') + ';" '
+                    }
+                    let alt = options.alt || Uri(url).basename.trimExt()
+
+                    if (meta.summary) {
+                        if (options.ifpost) {
+                            return
+                        }
+                        write('<a href="' + meta.url.basename + '">\n')
+                        write('<img ' + css + style + 'src="' + url + '" alt="' + alt + '">\n')
+                        write('</a>\n')
+                    } else {
+                        if (options.ifsummary) {
+                            return
+                        }
+                        write('<img ' + css + style + 'src="' + url + '" alt="' + alt + '">\n')
                     }
                 }
-            }
+            },
 
-            expansive.addWatcher('blog', blogWatcher)
+            pre: function(transform) {
+                let categories = transform.categories = {}
+                let service = transform.service
+                let sequence = service.sequence = []
 
-            function pre(topMeta, service) {
-                if (!expansive.modified.blog && !expansive.modified.everything) {
+                let modified = expansive.modified
+                if (!modified.blog && !modified.everything && !modified.file['index.html']) {
+                    service.modified = false
                     return
                 }
+                service.modified = true
                 let directories = expansive.directories
-                let dist = directories.dist
-                let collections = expansive.control.collections
-
-                let categories = {}
-                let sequence = []
-
-                service.sequence = sequence
                 let home = directories.contents.join(service.home)
-                let bm = expansive.metaCache[home] || topMeta
+                let bm = expansive.metaCache[home] || expansive.topMeta
                 bm.blog ||= {}
                 bm.blog.author ||= {}
 
@@ -124,22 +207,15 @@ Expansive.load({
                     }
                     sequence.push(post)
                 }
+            },
 
-                function sortPosts(seq, i, j) { 
-                    if (seq[i].date.time < seq[j].date.time) {
-                        return -1
-                    } else if (seq[i].date.time > seq[j].date.time) {
-                        return 1
-                    } else {
-                        return 0
-                    }
-                }
-                sequence.sort(sortPosts, -1)
+            post: function(transform) {
+                let service = transform.service
+                let sequence = service.sequence
 
                 if (expansive.filters) {
                     return
                 }
-
                 /*
                     Make a category page. Used for the overall 'Blog Archive' and per-category pages
                  */
@@ -148,7 +224,7 @@ Expansive.load({
                         return
                     }
                     if (category) {
-                        dist.join(service.home, service.categories, category).makeDir()
+                        directories.dist.join(service.home, service.categories, category).makeDir()
                     }
                     let title = category ? ('Category: ' + category) : 'Blog Archive'
                     let contents = '<div class="categories">\n<h1>' + title + '</h1>\n'
@@ -178,24 +254,37 @@ Expansive.load({
                         }
                     }
                     contents += '</tbody>\n</table>\n</div>\n'
-                    let meta = blend(bm.clone(), { layout: 'blog-categories', document: path, once: true })
+                    let home = directories.contents.join(service.home)
+                    let bm = expansive.metaCache[home] || expansive.topMeta
+                    let meta = blend(bm.clone(), { layout: 'blog-categories', document: path, once: true, isDocument: true })
                     contents = renderContents(contents, meta)
                     writeDest(contents, meta)
                 }
 
+                function sortPosts(seq, i, j) { 
+                    if (seq[i].date.time < seq[j].date.time) {
+                        return -1
+                    } else if (seq[i].date.time > seq[j].date.time) {
+                        return 1
+                    } else {
+                        return 0
+                    }
+                }
+
                 makeCategories(service.home.join('archive.html'))
 
-                for (let [category,list] in categories) {
+                for (let [category,list] in transform.categories) {
                     list.sort(sortPosts)
                     makeCategories(service.home.join('categories', category, 'index.html'), category)
                 }
 
                 /*
-                    Make the blog home page
+                    Make the blog home page with summaries from the top posts
                  */
                 let rss = ''
                 let contents = ''
                 let count = service.recent
+                sequence.sort(sortPosts, -1)
                 for each (post in sequence) {
                     let year = post.date.format('%Y')
                     let month = post.date.format('%b')
@@ -212,9 +301,11 @@ Expansive.load({
                     }
                     meta.layout = 'blog-summary'
                     meta.summary = true
+                    meta.isDocument = true
                     let text = renderContents(text, meta)
                     if (text) {
                         /* Rebase links from blog-page relative to home-page relative */
+                        //  MOB - could use abs service
                         let re = /(src|href|link)=['"][^'"]*['"]/g
                         let result = ''
                         let start = 0, end = 0
@@ -242,6 +333,7 @@ Expansive.load({
                         contents += result
                         if (service.rss) {
                             meta.layout = 'blog-atom-entry'
+                            meta.isDocument = true
                             rss += renderContents(article, meta)
                         }
                     }
@@ -249,97 +341,21 @@ Expansive.load({
                         break
                     }
                 }
-                let path = service.home.join('index.html.exp')
-                let meta = blend(bm.clone(), { layout: 'blog-home', document: path })
-                contents = renderContents(contents, meta)
-                writeDest(contents, meta)
-
-                if (service.rss) {
-                    let path = service.home.join('atom.xml')
-                    let meta = blend(bm.clone(), { layout: 'blog-atom', document: path })
-                    rss = renderContents(rss, meta)
-                    writeDest(rss, meta)
+                if (service.modified) {
+                    let path = service.home.join('index.html.exp')
+                    let home = directories.contents.join(service.home)
+                    let bm = expansive.metaCache[home] || expansive.topMeta
+                    let meta = blend(bm.clone(), { layout: 'blog-home', document: path, isDocument: true })
+                    contents = renderContents(contents, meta)
+                    writeDest(contents, meta)
+                    if (service.rss) {
+                        let path = service.home.join('atom.xml')
+                        let meta = blend(bm.clone(), { layout: 'blog-atom', document: path, isDocument: true })
+                        rss = renderContents(rss, meta)
+                        writeDest(rss, meta)
+                    }
                 }
             }
-
-            /*
-                Called by the sidebar to show recent posts
-             */
-            public function renderBlogRecent(count) {
-                let service = expansive.services.blog
-                count ||= service.recent
-                write('<ul class="recent">\n')
-                for each (post in service.sequence) {
-                    write('<li><a href="@~/' + post.meta.url + '">' + post.meta.title + '</a></li>\n')
-                    if (--count <= 0) {
-                        break
-                    }
-                }
-                write('<li><a href="' + meta.blog.top + '/archive.html">All Posts</a></li>\n')
-                write('</ul>\n')
-            }
-
-            public function renderBlogImage(url, options = {}) {
-                let service = expansive.services.blog
-                let width = ''
-                if (meta.summary) {
-                    if (options.summary) {
-                        blend(options, options.summary)
-                    }
-                } else {
-                    if (options.post) {
-                        blend(options, options.post)
-                    }
-                }
-                let style = '', clear = '', css = ''
-                if (options.lead) {
-                    css += 'width-50 '
-                }
-                if (options.width) {
-                    if (service.csp) {
-                        let width = parseInt(options.width / 10) * 10;
-                        css += 'width-' + width + ' '
-                    } else {
-                        style += 'width:' + options.width + ';'
-                    }
-                }
-                if (options.style) {
-                    if (service.csp) {
-                        trace('Warn', 'Inline styles used with CSP')
-                    } else {
-                        style += options.style + ';'
-                    }
-                }
-                if (options.clearfix) {
-                    clear = 'clearfix'
-                }
-                if (options.css) {
-                    css += options.css + ' ' + clear + ' '
-                } else if (clear) {
-                    css += 'clearfix '
-                }
-                if (css) {
-                    css = 'class="' + css.trim() + '" '
-                }
-                if (style) {
-                    style = 'style="' + style.trim().trim(';') + ';" '
-                }
-                let alt = options.alt || Uri(url).basename.trimExt()
-
-                if (meta.summary) {
-                    if (options.ifpost) {
-                        return
-                    }
-                    write('<a href="' + meta.url.basename + '">\n')
-                    write('<img ' + css + style + 'src="' + url + '" alt="' + alt + '">\n')
-                    write('</a>\n')
-                } else {
-                    if (options.ifsummary) {
-                        return
-                    }
-                    write('<img ' + css + style + 'src="' + url + '" alt="' + alt + '">\n')
-                }
-            }
-        `
+        }
     }
 })

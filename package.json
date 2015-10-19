@@ -12,6 +12,6 @@
         "url": "git://github.com/embedthis/exp-blog.git"
     },
     "devDependencies": {
-        "expansive": ">=0.6.0"
+        "expansive": ">=0.7.0"
     }
 }
