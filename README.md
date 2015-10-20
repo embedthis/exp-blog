@@ -28,6 +28,10 @@ RSS feeds.
 
 ## Creating Posts
 
+Posts are created as [Markdown](https://daringfireball.net/projects/markdown/) files under the contents/posts directory.  You can copy the sample post contents/posts/first-post.html.md to get you started. This is currently configured as a draft post. Set draft to false to see the post. You can create subdirectories under the contents/posts directory using any directory structure.
+
+Posts have a section of meta data at the top of the Markdown file between braces **{}**. The meta data defines the post layout, title, date, post categories and draft status. Post categories are any strings that help to classify your posts. There are two special directives that help format your post. The \<!--more--> string marks the end of a leading summary portion that is used on the blog home page. The \<!--clear--> string may be used to clear the HTML floating of text around images.
+
 ## Blog Meta Data
 
 The blog service supports additional meta data fields.

@@ -4,24 +4,24 @@ Expansive.load({
         name:  'blog',
 
         /*
+            Directory for post categories
+         */
+        categories: 'categories',
+
+        /*
+            Using CSP (no inline styles)
+         */
+        csp: true,
+
+        /*
             Home directory for the blog
          */
         home:  '.',
 
         /*
-            Top URL for the blog. May be prefixed by application prefix ('/blog')
-         */
-        top:  '@~',
-
-        /*
             Directory containing posts under home
          */
         posts: 'posts',
-
-        /*
-            Directory for post categories
-         */
-        categories: 'categories',
 
         /*
             Number of recent posts on the summary home page
@@ -34,10 +34,9 @@ Expansive.load({
         rss:   true,
 
         /*
-            Using CSP (no inline styles)
+            Top URL for the blog. May be prefixed by application prefix ('/blog')
          */
-        csp: true,
-
+        top:  '@~',
         transforms: {
             init: function(transform) {
                 let service = transform.service
