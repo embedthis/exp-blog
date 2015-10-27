@@ -206,6 +206,17 @@ Expansive.load({
                     }
                     sequence.push(post)
                 }
+                service.sortPosts = function(seq, i, j) { 
+                    if (seq[i].date.time < seq[j].date.time) {
+                        return -1
+                    } else if (seq[i].date.time > seq[j].date.time) {
+                        return 1
+                    } else {
+                        return 0
+                    }
+                }
+                sequence.sort(service.sortPosts, -1)
+
             },
 
             post: function(transform) {
@@ -215,6 +226,7 @@ Expansive.load({
                 if (expansive.filters) {
                     return
                 }
+
                 /*
                     Make a category page. Used for the overall 'Blog Archive' and per-category pages
                  */
@@ -260,20 +272,10 @@ Expansive.load({
                     writeDest(contents, meta)
                 }
 
-                function sortPosts(seq, i, j) { 
-                    if (seq[i].date.time < seq[j].date.time) {
-                        return -1
-                    } else if (seq[i].date.time > seq[j].date.time) {
-                        return 1
-                    } else {
-                        return 0
-                    }
-                }
-
                 makeCategories(service.home.join('archive.html'))
 
                 for (let [category,list] in transform.categories) {
-                    list.sort(sortPosts)
+                    list.sort(service.sortPosts)
                     makeCategories(service.home.join('categories', category, 'index.html'), category)
                 }
 
@@ -283,7 +285,6 @@ Expansive.load({
                 let rss = ''
                 let contents = ''
                 let count = service.recent
-                sequence.sort(sortPosts, -1)
                 for each (post in sequence) {
                     let year = post.date.format('%Y')
                     let month = post.date.format('%b')
