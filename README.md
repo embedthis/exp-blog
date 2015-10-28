@@ -55,7 +55,7 @@ The blog service supports additional meta data fields.
 * alt &mdash; Alternate text to use with the image. Default to the image basename.
 * clearfix &mdash; Clear the packing of the current HTML element. Defaults to false.
 * css &mdash; CSS selector to use in styling the image. Defaults to none.
-* lead &mdash; If true, the image is regarded as a post lead image. The image is formatted at 50% width and the text is right aligned around the image. Defaults to false.
+* lead &mdash; If true, the image is regarded as a post lead image. The image is formatted at 20% width on the summary page and 40% on the post page. The text is right aligned around the image. Defaults to false.
 * ifpost &mdash; If true, the image appears on the post page itself. Defaults to true.
 * ifsummary &mdash; If true, the image appears on the blog summary page. Defaults to true.
 * post &mdash; Hash of options to apply only on the post page. Defaults to none.
@@ -63,6 +63,7 @@ The blog service supports additional meta data fields.
 * summary &mdash; Hash of options to apploy only on the blog summary page.
 * width &mdash; Width of the image. This is converted into a CSS style of the form: 'width-NN' where NN is the width
     rounded down to the nearest power of 10. Default is none.
+* widths &mdash; Array of image widths. The first element is the width for the summary page, and the second width is the width for the post page. Default is none.
 
 ## Get Pak
 

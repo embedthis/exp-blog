@@ -99,6 +99,8 @@ Expansive.load({
                     write('</ul>\n')
                 }
 
+                /*
+                 */
                 global.renderBlogImage = function(url, options = {}) {
                     let service = expansive.services.blog
                     let width = ''
@@ -113,7 +115,11 @@ Expansive.load({
                     }
                     let style = '', clear = '', css = ''
                     if (options.lead) {
-                        css += 'width-50 '
+                        if (meta.summary) {
+                            css += 'width-20 '
+                        } else {
+                            css += 'width-40 '
+                        }
                     }
                     if (options.width) {
                         if (service.csp) {
@@ -123,6 +129,16 @@ Expansive.load({
                             style += 'width:' + options.width + ';'
                         }
                     }
+                    if (options.widths) {
+                        let index = meta.summary ? 0 : 1
+                        let width = options.widths[index]
+                        if (service.csp) {
+                            width = parseInt(width / 10) * 10;
+                            css += 'width-' + width + ' '
+                        } else {
+                            style += 'width:' + width + ';'
+                        }
+                    }
                     if (options.style) {
                         if (service.csp) {
                             trace('Warn', 'Inline styles used with CSP')
@@ -130,7 +146,7 @@ Expansive.load({
                             style += options.style + ';'
                         }
                     }
-                    if (options.clearfix) {
+                    if (options.clearfix || options.clear) {
                         clear = 'clearfix'
                     }
                     if (options.css) {
