@@ -116,7 +116,7 @@ Expansive.load({
                     let style = '', clear = '', css = ''
                     if (options.lead) {
                         if (meta.summary) {
-                            css += 'width-20 '
+                            css += 'width-30 '
                         } else {
                             css += 'width-40 '
                         }
