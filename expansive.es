@@ -34,6 +34,11 @@ Expansive.load({
         rss:   true,
 
         /*
+            Generate latest blog post
+         */
+        latest:   true,
+
+        /*
             Top URL for the blog. May be prefixed by application prefix ('/blog')
          */
         top:  '@~',
@@ -299,6 +304,7 @@ Expansive.load({
                     Make the blog home page with summaries from the top posts
                  */
                 let rss = ''
+                let latest = ''
                 let contents = ''
                 let count = service.recent
                 for each (post in sequence) {
@@ -352,6 +358,11 @@ Expansive.load({
                             meta.isDocument = true
                             rss += renderContents(article, meta)
                         }
+                        if (service.latest) {
+                            meta.layout = 'blog-latest-entry'
+                            meta.isDocument = true
+                            latest += renderContents(article, meta)
+						}
                     }
                     if (--count <= 0) {
                         break
@@ -369,6 +380,7 @@ Expansive.load({
                         let meta = blend(bm.clone(), { layout: 'blog-atom', document: path, isDocument: true })
                         rss = renderContents(rss, meta)
                         writeDest(rss, meta)
+                        let path = service.home.join('atom.xml')
                     }
                 }
             }
