@@ -358,7 +358,7 @@ Expansive.load({
                             meta.isDocument = true
                             rss += renderContents(article, meta)
                         }
-                        if (service.latest) {
+                        if (service.latest && !latest) {
                             meta.layout = 'blog-latest-entry'
                             meta.isDocument = true
                             latest += renderContents(article, meta)
@@ -380,7 +380,12 @@ Expansive.load({
                         let meta = blend(bm.clone(), { layout: 'blog-atom', document: path, isDocument: true })
                         rss = renderContents(rss, meta)
                         writeDest(rss, meta)
-                        let path = service.home.join('atom.xml')
+                    }
+                    if (service.latest) {
+                        let path = service.home.join(service.posts, 'latest.html')
+                        let meta = blend(bm.clone(), { layout: 'blog-latest', document: path, isDocument: true })
+                        latest = renderContents(latest, meta)
+                        writeDest(latest, meta)
                     }
                 }
             }
