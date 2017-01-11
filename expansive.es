@@ -361,7 +361,9 @@ Expansive.load({
                         if (service.latest && !latest) {
                             meta.layout = 'blog-latest-entry'
                             meta.isDocument = true
-                            latest += renderContents(article, meta)
+							let text = renderContents(article, meta)
+							text = text.replace(/<a href="/g, '<a target="_blank" href="')
+                            latest += text
 						}
                     }
                     if (--count <= 0) {
