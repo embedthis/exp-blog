@@ -211,7 +211,7 @@ Expansive.load({
                     expansive.initMeta(path, meta)
                     meta = blend(bm.clone(), meta)
                     meta = blend({categories: [], date: Date()}, meta)
-                    if (meta.draft) {
+                    if (meta.draft || meta.index === false) {
                         continue
                     }
                     let date = meta.date || Date()
@@ -305,6 +305,7 @@ Expansive.load({
                  */
                 let rss = ''
                 let latest = ''
+                let release = ''
                 let contents = ''
                 let count = service.recent
                 for each (post in sequence) {
@@ -365,6 +366,13 @@ Expansive.load({
 							text = text.replace(/<a href="/g, '<a target="_blank" href="')
                             latest += text
 						}
+                        if (service.release && meta.release && !release) {
+                            meta.layout = 'blog-release-entry'
+                            meta.isDocument = true
+							let text = renderContents(article, meta)
+							text = text.replace(/<a href="/g, '<a target="_blank" href="')
+                            release += text
+						}
                     }
                     if (--count <= 0) {
                         break
@@ -388,6 +396,12 @@ Expansive.load({
                         let meta = blend(bm.clone(), { layout: 'blog-latest', document: path, isDocument: true })
                         latest = renderContents(latest, meta)
                         writeDest(latest, meta)
+                    }
+                    if (service.release) {
+                        let path = service.home.join(service.posts, 'release.html')
+                        let meta = blend(bm.clone(), { layout: 'blog-release', document: path, isDocument: true })
+                        release = renderContents(release, meta)
+                        writeDest(release, meta)
                     }
                 }
             }
