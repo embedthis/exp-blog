@@ -49,15 +49,15 @@ Expansive.load({
                     service[d] = Path(service[d])
                 }
                 /*
-                    Inject meta data for pages
+                    Prepare meta data
                  */
-                expansive.topMeta.blog ||= {}
-                let bm = expansive.topMeta.blog
+                let tm = expansive.topMeta
+                let bm = tm.blog ||= {}
                 bm.home ||= service.home
                 bm.top ||= Uri(service.top)
                 bm.posts = bm.top.join(service.posts)
                 bm.categories = bm.top.join(service.categories)
-                
+
                 /*
                     Watch for changes
                  */
@@ -104,8 +104,6 @@ Expansive.load({
                     write('</ul>\n')
                 }
 
-                /*
-                 */
                 global.renderBlogImage = function(url, options = {}) {
                     let service = expansive.services.blog
                     let width = ''
@@ -227,7 +225,7 @@ Expansive.load({
                     }
                     sequence.push(post)
                 }
-                service.sortPosts = function(seq, i, j) { 
+                service.sortPosts = function(seq, i, j) {
                     if (seq[i].date.time < seq[j].date.time) {
                         return -1
                     } else if (seq[i].date.time > seq[j].date.time) {
@@ -272,12 +270,12 @@ Expansive.load({
                             contents += '<td class="year one wide column">' + ((year != pastYear) ? year : '')
                             contents += '<td class="date one wide column">' + ((month != pastMonth) ? month : '') + ' ' +
                                          ((day != pastDay) ? day : '') + '</td>\n'
-                            contents += '<td class="thirteen wide column"><div class="title">' + 
+                            contents += '<td class="thirteen wide column"><div class="title">' +
                                         '<a href="@~/' + meta.url + '">' + meta.title + '</a></div>\n'
                             contents += '<div class="posted">posted in '
                             for each (category in meta.categories) {
                                 let cat = category.replace(/\\s/g, '%20')
-                                contents += '<a href="' + service.top + '/' + service.categories + '/' + cat 
+                                contents += '<a href="' + service.top + '/' + service.categories + '/' + cat
                                     + '/">' + category + '</a>, '
                             }
                             contents = contents.slice(0, -2)
@@ -288,7 +286,11 @@ Expansive.load({
                     contents += '</tbody>\n</table>\n</div>\n'
                     let home = directories.contents.join(service.home)
                     let bm = expansive.metaCache[home] || expansive.topMeta
-                    let meta = blend(bm.clone(), { layout: 'blog-categories', document: path, once: true, isDocument: true })
+                    let meta = blend(bm.clone(), {
+                        layout: 'blog-categories', document: path, once: true, isDocument: true
+                    })
+                    meta.title = (category || 'All') + ' Posts'
+                    meta.description = meta.title + ' for ' + meta.blog.title.split('|')[0].trim()
                     contents = renderContents(contents, meta)
                     writeDest(contents, meta)
                 }
