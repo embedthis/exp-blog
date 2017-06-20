@@ -383,8 +383,10 @@ Expansive.load({
                 if (service.modified) {
                     let path = service.home.join('index.html.exp')
                     let home = directories.contents.join(service.home)
-                    let bm = expansive.metaCache[home] || expansive.topMeta
+                    let bm = blend(expansive.topMeta.clone(), expansive.metaCache[home] || {})
                     let meta = blend(bm.clone(), { layout: 'blog-home', document: path, isDocument: true })
+                    meta.title = meta.blog.title
+                    meta.description = meta.blog.description
                     contents = renderContents(contents, meta)
                     writeDest(contents, meta)
                     if (service.rss) {
