@@ -1,7 +1,7 @@
 {
     "name": "exp-blog",
     "description": "Blogging Plugin for Expansive",
-    "version": "0.3.5",
+    "version": "0.3.6",
     "keywords": [
         "expansive-plugin",
         "blog"
@@ -14,7 +14,5 @@
     "devDependencies": {
         "expansive": ">=0.7.0"
     },
-    "pak": {
-        "origin": "embedthis/exp-blog"
-    }
+    "origin": "embedthis/exp-blog"
 }

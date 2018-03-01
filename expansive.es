@@ -235,7 +235,6 @@ Expansive.load({
                     }
                 }
                 sequence.sort(service.sortPosts, -1)
-
             },
 
             post: function(transform) {
@@ -290,7 +289,11 @@ Expansive.load({
                         layout: 'blog-categories', document: path, once: true, isDocument: true
                     })
                     meta.title = (category || 'All') + ' Posts'
-                    meta.description = meta.title + ' for ' + meta.blog.title.split('|')[0].trim()
+                    if (meta.blog.title) {
+                        meta.description = meta.title + ' for ' + meta.blog.title.split('|')[0].trim()
+                    } else {
+                        meta.description = meta.title
+                    }
                     contents = renderContents(contents, meta)
                     writeDest(contents, meta)
                 }
@@ -340,7 +343,7 @@ Expansive.load({
                             let [all,kind,ref] = match[0].match(/(src|href|link)=['"]([^\"']*)['"]/)
                             let url
                             try {
-                                if (!Uri(ref).scheme) {
+                                if (!Uri(ref).scheme && !Uri(ref).isAbsolute) {
                                     if (ref == '') {
                                         ref = './'
                                     }
@@ -368,7 +371,7 @@ Expansive.load({
 							text = text.replace(/<a href="/g, '<a target="_blank" href="')
                             latest += text
 						}
-                        if (service.release && meta.release && !release) {
+                        if (service.releases && meta.release && !release) {
                             meta.layout = 'blog-release-entry'
                             meta.isDocument = true
 							let text = renderContents(article, meta)
@@ -401,7 +404,7 @@ Expansive.load({
                         latest = renderContents(latest, meta)
                         writeDest(latest, meta)
                     }
-                    if (service.release) {
+                    if (service.releases) {
                         let path = service.home.join(service.posts, 'release.html')
                         let meta = blend(bm.clone(), { layout: 'blog-release', document: path, isDocument: true })
                         release = renderContents(release, meta)
