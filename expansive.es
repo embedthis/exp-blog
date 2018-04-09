@@ -24,7 +24,7 @@ Expansive.load({
         posts: 'posts',
 
         /*
-            Number of recent posts on the summary home page
+            Number of recent posts on the sidebar
          */
         recent: 5,
 
@@ -32,6 +32,11 @@ Expansive.load({
             Generate RSS feed
          */
         rss:   true,
+
+        /*
+            Number of posts on the summary home page
+         */
+        summary: 5,
 
         /*
             Generate latest blog post
@@ -120,7 +125,9 @@ Expansive.load({
                     if (options.lead) {
                         if (meta.summary) {
                             css += 'width-30 '
-                        } else {
+                            delete options.width
+                            delete options.css
+                        } else if (!options.width) {
                             css += 'width-40 '
                         }
                     }
@@ -157,6 +164,9 @@ Expansive.load({
                     } else if (clear) {
                         css += 'clearfix '
                     }
+                    if (options.caption) {
+                        css += 'captioned '
+                    }
                     if (css) {
                         css = 'class="' + css.trim() + '" '
                     }
@@ -177,6 +187,9 @@ Expansive.load({
                             return
                         }
                         write('<img ' + css + style + 'src="' + url + '" alt="' + alt + '">\n')
+                    }
+                    if (options.caption) {
+                        write('<div class="caption">' + options.caption + '</div>\n')
                     }
                 }
             },
@@ -312,7 +325,7 @@ Expansive.load({
                 let latest = ''
                 let release = ''
                 let contents = ''
-                let count = service.recent
+                let count = service.summary || service.recent
                 for each (post in sequence) {
                     let year = post.date.format('%Y')
                     let month = post.date.format('%b')
