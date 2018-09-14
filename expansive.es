@@ -124,7 +124,7 @@ Expansive.load({
                     let style = '', clear = '', css = ''
                     if (options.lead) {
                         if (meta.summary) {
-                            css += 'width-30 '
+                            css += 'lead width-30 '
                             delete options.width
                             delete options.css
                         } else if (!options.width) {
@@ -191,20 +191,23 @@ Expansive.load({
                     if (options.caption) {
                         write('<div class="caption">' + options.caption + '</div>\n')
                     }
+                    if (options.lead) {
+                        write('<div class="nop"></div>')
+                    }
                 }
             },
 
             pre: function(transform) {
-                let categories = transform.categories = {}
                 let service = transform.service
-                let sequence = service.sequence = []
-
                 let modified = expansive.modified
                 if (!modified.blog && !modified.everything && !modified.file['index.html']) {
                     service.modified = false
                     return
                 }
                 service.modified = true
+
+                let categories = transform.categories = {}
+                let sequence = service.sequence = []
                 let directories = expansive.directories
                 let home = directories.contents.join(service.home)
                 let bm = expansive.metaCache[home] || expansive.topMeta
@@ -232,6 +235,12 @@ Expansive.load({
                         dest: meta.dest,
                         date: Date(date)
                     }
+                    if (meta.blog.features) {
+                        let index = meta.blog.features.indexOf(meta.destPath.toString())
+                        if (index >= 0) {
+                            post.feature = true
+                        }
+                    }
                     for each (category in meta.categories) {
                         categories[category] ||= []
                         categories[category].push(post)
@@ -254,7 +263,7 @@ Expansive.load({
                 let service = transform.service
                 let sequence = service.sequence
 
-                if (expansive.filters) {
+                if (expansive.filters || !service.modified) {
                     return
                 }
 
@@ -262,7 +271,7 @@ Expansive.load({
                     Make a category page. Used for the overall 'Blog Archive' and per-category pages
                  */
                 function makeCategories(path: Path, category) {
-                    if (!expansive.modified.everything) {
+                    if (!expansive.modified.everything || sequence.length == 0) {
                         return
                     }
                     if (category) {
@@ -311,42 +320,27 @@ Expansive.load({
                     writeDest(contents, meta)
                 }
 
-                makeCategories(service.home.join('archive.html'))
-
-                for (let [category,list] in transform.categories) {
-                    list.sort(service.sortPosts)
-                    makeCategories(service.home.join('categories', category, 'index.html'), category)
-                }
-
-                /*
-                    Make the blog home page with summaries from the top posts
-                 */
-                let rss = ''
-                let latest = ''
-                let release = ''
-                let contents = ''
-                let count = service.summary || service.recent
-                for each (post in sequence) {
+                function renderPostText(post) {
                     let year = post.date.format('%Y')
                     let month = post.date.format('%b')
                     let day = post.date.format('%e')
                     let path = post.document
                     let [fileMeta, article] = splitMetaContents(path, path.readString())
                     let meta = blendMeta(post.meta.clone(true), fileMeta || {})
-
+                    post.meta = meta
+                    post.article = article
                     let text = article
                     let matches = text.match(/(.*)<!--more-->/sm)
                     if (matches) {
-                        text = matches[1] + '\n'
+                        text = matches[1]
                         meta.more = true
                     }
-                    meta.layout = 'blog-summary'
+                    meta.layout = post.feature ? '' : 'blog-summary'
                     meta.summary = true
                     meta.isDocument = true
                     let text = renderContents(text, meta)
                     if (text) {
                         /* Rebase links from blog-page relative to home-page relative */
-                        //  MOB - could use abs service
                         let re = /(src|href|link)=['"][^'"]*['"]/g
                         let result = ''
                         let start = 0, end = 0
@@ -371,57 +365,140 @@ Expansive.load({
                             start = re.lastIndex
                         }
                         result += text.slice(start)
-                        contents += result
-                        if (service.rss) {
-                            meta.layout = 'blog-atom-entry'
-                            meta.isDocument = true
-                            rss += renderContents(article, meta)
-                        }
-                        if (service.latest && !latest) {
-                            meta.layout = 'blog-latest-entry'
-                            meta.isDocument = true
-							let text = renderContents(article, meta)
-							text = text.replace(/<a href="/g, '<a target="_blank" href="')
-                            latest += text
-						}
-                        if (service.releases && meta.release && !release) {
-                            meta.layout = 'blog-release-entry'
-                            meta.isDocument = true
-							let text = renderContents(article, meta)
-							text = text.replace(/<a href="/g, '<a target="_blank" href="')
-                            release += text
-						}
+                        text = result
                     }
-                    if (--count <= 0) {
+                    post.text = text
+                    return text
+                }
+
+                function renderFeature(post) {
+                    let meta = post.meta
+                    let text = renderPostText(post)
+                    text = text.replace(/^<p>/, '')
+                    let def = meta.post = {
+                        title: meta.title
+                    }
+                    let image = text.match(/.*src="([^"]*)"/sm)
+                    if (!image || !image[1]) {
+                        print("Cannot extract image src", text.slice(0, 200))
+                    } else {
+                        def.image = image[1]
+                    }
+                    let matches = text.match(/.*<div class="nop"><\/div>(.*)/sm)
+                    if (matches) {
+                        def.brief = matches[1].replace(/<[^>]*>/gsm, ' ')
+                    } else {
+                        def.brief = text
+                    }
+                    if (def.brief.length > 140) {
+                        def.brief = def.brief.slice(0, 140) + ' ...'
+                    }
+                    meta.layout = 'blog-feature'
+                    return renderContents('', meta)
+                }
+
+                function renderRss(post) {
+                    let meta = post.meta
+                    meta.layout = 'blog-atom-entry'
+                    meta.isDocument = true
+                    return renderContents(post.article, meta)
+                }
+
+                //  MOB - must only be done once
+                function renderLatest(post) {
+                    let meta = post.meta
+                    meta.layout = 'blog-latest-entry'
+                    meta.isDocument = true
+                    let text = renderContents(post.article, meta)
+                    return text.replace(/<a href="/g, '<a target="_blank" href="')
+                }
+
+                function renderReleases(post) {
+                    let meta = post.meta
+                    meta.layout = 'blog-release-entry'
+                    meta.isDocument = true
+                    let text = renderContents(post.article, meta)
+                    return text.replace(/<a href="/g, '<a target="_blank" href="')
+                }
+
+                makeCategories(service.home.join('archive.html'))
+
+                for (let [category,list] in transform.categories) {
+                    list.sort(service.sortPosts)
+                    makeCategories(service.home.join('categories', category, 'index.html'), category)
+                }
+
+                /*
+                    Make the blog home page with featured articles and summaries from the top posts
+                 */
+                meta.features = []
+                for each (feature in meta.blog.features) {
+                    let post = sequence.find(function(e) { return e.meta.destPath == feature})
+                    if (post) {
+                        meta.features.push(renderFeature(post))
+                    } else {
+                        print("Cannot find feature", feature)
+                    }
+                }
+
+                let count = service.summary || service.recent
+                let rss = []
+                let latest
+                let release
+                let posts = meta.posts = []
+                for each (post in sequence) {
+                    if (!post.feature) {
+                        if (meta.blog.features) {
+                            posts.push(renderFeature(post))
+                        } else {
+                            posts.push(renderPostText(post))
+                        }
+                    }
+                    if (service.rss) {
+                        rss.push(renderRss(post))
+                    }
+                    if (service.latest && !latest) {
+                        latest = renderLatest(post)
+                    }
+                    if (service.releases && meta.release && !release) {
+                        release = renderRelease(post)
+                    }
+                    if (--count < 0) {
                         break
                     }
                 }
+
+                //  MOB - remove modified
+                assert(service.modified)
                 if (service.modified) {
                     let path = service.home.join('index.html.exp')
                     let home = directories.contents.join(service.home)
                     let bm = blend(expansive.topMeta.clone(), expansive.metaCache[home] || {})
+
                     let meta = blend(bm.clone(), { layout: 'blog-home', document: path, isDocument: true })
                     meta.title = meta.blog.title
                     meta.description = meta.blog.description
-                    contents = renderContents(contents, meta)
+                    meta.posts = posts
+                    let contents = renderContents('', meta)
                     writeDest(contents, meta)
+
                     if (service.rss) {
                         let path = service.home.join('atom.xml')
                         let meta = blend(bm.clone(), { layout: 'blog-atom', document: path, isDocument: true })
-                        rss = renderContents(rss, meta)
-                        writeDest(rss, meta)
+                        let contents = renderContents(rss.join(''), meta)
+                        writeDest(contents, meta)
                     }
                     if (service.latest) {
                         let path = service.home.join(service.posts, 'latest.html')
                         let meta = blend(bm.clone(), { layout: 'blog-latest', document: path, isDocument: true })
-                        latest = renderContents(latest, meta)
-                        writeDest(latest, meta)
+                        let contents = renderContents(latest, meta)
+                        writeDest(contents, meta)
                     }
                     if (service.releases) {
                         let path = service.home.join(service.posts, 'release.html')
                         let meta = blend(bm.clone(), { layout: 'blog-release', document: path, isDocument: true })
-                        release = renderContents(release, meta)
-                        writeDest(release, meta)
+                        let contents = renderContents(release, meta)
+                        writeDest(contents, meta)
                     }
                 }
             }
