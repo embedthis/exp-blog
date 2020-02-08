@@ -1,7 +1,7 @@
 {
     "name": "exp-blog",
     "description": "Blogging Plugin for Expansive",
-    "version": "0.3.6",
+    "version": "1.0.0",
     "keywords": [
         "expansive-plugin",
         "blog"
