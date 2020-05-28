@@ -173,6 +173,7 @@ Expansive.load({
                     if (style) {
                         style = 'style="' + style.trim().trim(';') + ';" '
                     }
+                    url = url || meta.featured
                     let alt = options.alt || Uri(url).basename.trimExt()
 
                     if (meta.summary) {
@@ -338,6 +339,7 @@ Expansive.load({
                     meta.layout = post.feature ? '' : 'blog-summary'
                     meta.summary = true
                     meta.isDocument = true
+
                     let text = renderContents(text, meta)
                     if (text) {
                         /* Rebase links from blog-page relative to home-page relative */
@@ -468,7 +470,6 @@ Expansive.load({
                     }
                 }
 
-                //  MOB - remove modified
                 assert(service.modified)
                 if (service.modified) {
                     let path = service.home.join('index.html.exp')
