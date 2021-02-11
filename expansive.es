@@ -68,12 +68,12 @@ expansive.addWatcher('blog', function() {
                 }
             }
             /*
-                Still not catching modifications to the partials used by the index.html and archive.html
-             */
+                Broken -- loops when partials are modified
             let index = blog.home.join('index.html')
             if (postRendered > getLastRendered(index)) {
                 expansive.modify(index, 'blog', 'file')
             }
+            */
         }
     }
 })
